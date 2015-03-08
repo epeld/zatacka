@@ -18,13 +18,7 @@ import Graphics.UI.GLUT (IdleCallback, KeyboardMouseCallback, elapsedTime,
                          swapBuffers)
 
 import Concurrency (writeIORef)
-
-type Time = Int
-type DTime = Int
-
-type StateMutator = DTime -> [InputEvent] -> IO ()
-
-data InputEvent = InputEvent Key KeyState Modifiers Position deriving (Show, Eq)
+import Mutate
 
 type TimeIORef = IORef Time
 type InputIORef = IORef [InputEvent]
@@ -66,7 +60,7 @@ gatherPendingInput c = writeIORef (inputRef c) []
 
 newTimeDelta :: GLUTContext -> IO DTime
 newTimeDelta c = do
-    currentTime <- fromIntegral `fmap` get elapsedTime
+    currentTime <- pure fromIntegral <*> get elapsedTime
     lastTime <- writeIORef (timeRef c) currentTime
     return $ currentTime - lastTime
 
