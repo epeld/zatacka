@@ -3,7 +3,7 @@ import Prelude as P
 
 import System.IO (IO)
 
-import Control.Monad ((>>=), (=<<), forM_, return, (>=>))
+import Control.Monad ((>>=), (=<<), forM_, return, (>=>), (<=<))
 import Control.Applicative
 import Control.Arrow ((&&&))
 
@@ -18,28 +18,50 @@ import Graphics.UI.GLUT (IdleCallback, KeyboardMouseCallback, elapsedTime,
                          swapBuffers)
 
 import Concurrency (writeIORef)
-import Mutate
+import Time
+import Input
+
+import qualified Mutate
+import qualified Transform
 
 type TimeIORef = IORef Time
 type InputIORef = IORef [InputEvent]
 
-data GLUTContext = GLUTContext { inputRef :: InputIORef, timeRef :: TimeIORef, mutator :: StateMutator }
+data GLUTContext a = GLUTContext {
+    inputRef :: InputIORef, 
+    timeRef :: TimeIORef, 
+    mutator :: Mutate.StateMutator a }
 
-runMutator :: StateMutator -> IO ()
-runMutator = context >=> activate
+-- attach an adapter, e.g for drawing graphics, on top of a context
+attachIO = flip withIO
 
-activate :: GLUTContext -> IO ()
+-- guarantee completely IMpure side-effects, meaning
+-- they do not modify the value in any way. They ONLY cause side effects
+-- example: attachIO (sideEffect Graphics.draw) ctx
+sideEffect :: (a -> IO ()) -> a -> IO a
+sideEffect f a = f a >> return a
+
+withIO :: GLUTContext a -> (a -> IO a) -> GLUTContext a
+withIO c f = c { mutator = fmap (f <=<) (mutator c) }
+
+make :: Transform.StateTransform a -> a -> IO (GLUTContext a)
+make f initial = do
+    s <- newIORef initial
+    let m dt input = atomicModifyIORef' s (f dt input &&& id)
+    context m
+
+activate :: GLUTContext a -> IO ()
 activate c = do
     idleCallback $= Just (idle c)
     keyboardMouseCallback $= Just (keyboardMouse c)
     
-context :: StateMutator -> IO GLUTContext
+context :: Mutate.StateMutator a -> IO (GLUTContext a)
 context m = pure GLUTContext <*> newIORef [] <*> newTimeIORef <*> pure m
 
 newTimeIORef :: IO TimeIORef
 newTimeIORef = newIORef =<< get elapsedTime
 
-keyboardMouse :: GLUTContext -> KeyboardMouseCallback
+keyboardMouse :: GLUTContext a -> KeyboardMouseCallback
 keyboardMouse c = keyboardMouse' (inputRef c)
 
 keyboardMouse' :: InputIORef -> KeyboardMouseCallback
@@ -47,18 +69,19 @@ keyboardMouse' iorf key keyState mods pos = modifyIORef' iorf ( event : )
     where event = InputEvent key keyState mods pos 
 
 
-idle :: GLUTContext -> IdleCallback
+idle :: GLUTContext a -> IdleCallback
 idle c = do
     delta <- newTimeDelta c 
     inputs <- gatherPendingInput c
     mutator c delta inputs
+    return ()
 
 
-gatherPendingInput :: GLUTContext -> IO [InputEvent]
+gatherPendingInput :: GLUTContext a -> IO [InputEvent]
 gatherPendingInput c = writeIORef (inputRef c) []
 
 
-newTimeDelta :: GLUTContext -> IO DTime
+newTimeDelta :: GLUTContext a -> IO DTime
 newTimeDelta c = do
     currentTime <- pure fromIntegral <*> get elapsedTime
     lastTime <- writeIORef (timeRef c) currentTime

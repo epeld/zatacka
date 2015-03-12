@@ -1,14 +1,15 @@
 module Game where
+import Linear
+
 import Time
+import Input
+import Transform
 
-data InputEvent = InputEvent Key KeyState Modifiers Position deriving (Show, Eq)
+data GameState a = GameState { worms :: [Worm a] }
 
-data GameState = { worms :: [Worm] }
+data Worm a = Worm
 
-data Worm = [Vector3]
+type Position = V2
 
-data Position = Vector3 Int Int Int
-
-
-nextState :: State -> DTime -> [InputEvent] -> State
-nextState s dt is = s -- TODO
+-- nextState :: State -> DTime -> [InputEvent] -> State
+-- nextState s dt is = s -- TODO
