@@ -1,9 +1,5 @@
 module Segment where
-import Prelude hiding (sum)
 import Data.Monoid
-
-import Control.Lens
-import Control.Arrow
 
 import Geometry
 import Time
@@ -18,6 +14,10 @@ type CPEndo a = Checkpoint a -> Checkpoint a
 checkpoint :: [Segment] -> Time -> CPEndo a
 checkpoint segs t = appEndo $ mconcat $ endo `map` cut segs t
 
+--
+--  Time Calculations
+--
+
 -- Cut off the segments that happen after a given time
 -- Might split the final segment in half if it is still ongoing when the cut happens
 cut :: [Segment] -> Time -> [Segment]
@@ -26,31 +26,23 @@ cut segs t = zip (dirs segs) dts
 
 --
 -- Recompute delta times for segments, given that 't' is the final time allowed
+--
 clamped :: [Segment] -> [DTime]
 clamped segs t = ends' segs `vecminus` starts' segs
     where starts' = vecmin t. starts
           ends' = vecmin t. ends
-    
--- extract diretions from segments
-dirs :: [Segment] -> [Maybe Direction]
-dirs = map fst
 
--- extract start times from segments
-starts :: [Segment] -> [Time]
-starts = scanl (+) 0. map snd
 
--- extract end times (= start time of previous segment)
-ends :: [Segment] -> [Time]
-ends = drop 1. starts
+--
+-- Checkpoint Calculations
+--
 
 endo :: Segment -> CPEndo a
 endo = Endo. uncurry apply
 
 -- Apply a direction change (or stop one) and calculate next checkpoint
 apply :: Maybe Direction -> DTime -> CPEndo a
-apply Nothing dt = extrapolate dt
-apply (Just d) dt = turn d dt
-
+apply d = extrapolate `maybe` turn d
 
 -- Calculate next checkpoint after turn
 turn :: Direction -> DTime -> CPEndo a
@@ -61,6 +53,25 @@ turn d dt = let omega = rads d dt in
 -- Calculate next straight-line checkpoint
 extrapolate :: DTime -> CPEndo a
 extrapolate dt = first (+ dt * speed)
+
+--
+-- Getters
+--
+
+-- extract start times from segments
+starts :: [Segment] -> [Time]
+starts = dropLast 1. scanl (+) 0. dts
+
+-- extract end times (= start time of previous segment)
+ends :: [Segment] -> [Time]
+ends = drop 1. starts
+
+-- extract diretions from segments
+dirs :: [Segment] -> [Maybe Direction]
+dirs = map fst
+
+dts :: [Segment] -> [DTime]
+dts = map snd
 
 --
 --  Helpers
@@ -83,4 +94,7 @@ rads d dt = sign d * dt * angularSpeed
 
 speed = 1
 angularSpeed = pi / 8
+
+dropLast :: Int -> [a] -> [a]
+dropLast n = map snd. zip (drop n)
 
