@@ -1,17 +1,28 @@
+{-# LANGUAGE TemplateHaskell, FlexibleInstances #-}
+{-# LANGUAGE NoMonomorphismRestriction #-}
 module Segment where
+import Prelude hiding (Right, Left)
+
+import Control.Arrow
 import Data.Monoid
+
+import Linear
+import Control.Lens
 
 import Geometry
 import Time
 
 data Direction = Left | Right deriving (Show, Eq)
 
-type Segment = (Maybe Direction, DTime)
-type Checkpoint a = (Position a, Heading a)
-type CPEndo a = Checkpoint a -> Checkpoint a
+data Segment = Segment { _direction :: Maybe Direction, _duration :: DTime }
+$(makeLenses ''Segment)
+
+data Checkpoint = Checkpoint { _position :: Position FloatType, _heading :: Heading FloatType }
+$(makeLenses ''Checkpoint)
+
 
 -- Compute checkpoint at time 't', given a list of segments and a starting position
-checkpoint :: [Segment] -> Time -> CPEndo a
+checkpoint :: [Segment] -> Time -> Checkpoint -> Checkpoint
 checkpoint segs t = appEndo $ mconcat $ endo `map` cut segs t
 
 --
@@ -21,13 +32,13 @@ checkpoint segs t = appEndo $ mconcat $ endo `map` cut segs t
 -- Cut off the segments that happen after a given time
 -- Might split the final segment in half if it is still ongoing when the cut happens
 cut :: [Segment] -> Time -> [Segment]
-cut segs t = zip (dirs segs) dts
+cut segs t = uncurry Segment `fmap` zip (dirs segs) dts
     where dts = takeWhile (> 0) (segs `clamped` t)
 
 --
 -- Recompute delta times for segments, given that 't' is the final time allowed
 --
-clamped :: [Segment] -> [DTime]
+clamped :: [Segment] -> Time -> [DTime]
 clamped segs t = ends' segs `vecminus` starts' segs
     where starts' = vecmin t. starts
           ends' = vecmin t. ends
@@ -37,45 +48,53 @@ clamped segs t = ends' segs `vecminus` starts' segs
 -- Checkpoint Calculations
 --
 
-endo :: Segment -> CPEndo a
-endo = Endo. uncurry apply
+endo :: Segment -> Endo Checkpoint
+endo s = Endo $ apply (s ^. direction) (s ^. duration)
 
 -- Apply a direction change (or stop one) and calculate next checkpoint
-apply :: Maybe Direction -> DTime -> CPEndo a
-apply d = extrapolate `maybe` turn d
+apply :: Maybe Direction -> DTime -> Checkpoint -> Checkpoint
+apply d = maybe extrapolate turn d
 
 -- Calculate next checkpoint after turn
-turn :: Direction -> DTime -> CPEndo a
-turn d dt = let omega = rads d dt in
-    \(p, h) -> 
-        (p + tanpt h r omega, rotation omega !* h)
+turn :: Direction -> DTime -> Checkpoint -> Checkpoint
+turn d dt cp = 
+    position +~ tanpt (cp ^. heading) radius omega $
+    heading %~ (`Geometry.rotate` omega) $ cp
+    where
+    omega = rads d dt
 
 -- Calculate next straight-line checkpoint
-extrapolate :: DTime -> CPEndo a
-extrapolate dt = first (+ dt * speed)
+extrapolate :: DTime -> Checkpoint -> Checkpoint
+extrapolate dt cp = position +~ displacement $ cp
+    where displacement = cp ^. heading. to (^* dt)
 
 --
 -- Getters
 --
 
+sums :: Num a => [a] -> [a]
+sums = scanl (+) 0
+
 -- extract start times from segments
-starts :: [Segment] -> [Time]
-starts = dropLast 1. scanl (+) 0. dts
+starts :: [Segment] -> [DTime]
+starts = dropLast 1. sums. dts
 
 -- extract end times (= start time of previous segment)
-ends :: [Segment] -> [Time]
-ends = drop 1. starts
+ends ::  [Segment] -> [DTime]
+ends = drop 1. sums. dts
 
 -- extract diretions from segments
 dirs :: [Segment] -> [Maybe Direction]
-dirs = map fst
+dirs = fmap (^. direction)
 
 dts :: [Segment] -> [DTime]
-dts = map snd
+dts = fmap (^. duration)
 
 --
 --  Helpers
 --
+
+radius = 1 -- Turn radius
 
 -- vector minus
 vecminus :: Num a => [a] -> [a] -> [a]
@@ -89,12 +108,15 @@ sign :: Num a => Direction -> a
 sign Right = 1
 sign Left = -1
 
-rads :: Num a => Direction -> DTime -> a
-rads d dt = sign d * dt * angularSpeed
+rads :: Direction -> DTime -> FloatType
+rads d dt = Segment.sign d * dt * angularSpeed
 
+speed :: Num a => a
 speed = 1
+
+angularSpeed :: Floating a => a
 angularSpeed = pi / 8
 
 dropLast :: Int -> [a] -> [a]
-dropLast n = map snd. zip (drop n)
+dropLast n xs = map snd $ zip (drop n xs) xs
 

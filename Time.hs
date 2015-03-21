@@ -1,4 +1,6 @@
 module Time where
 
-type Time = Int
-type DTime = Int
+type FloatType = Float
+
+type Time = FloatType
+type DTime = FloatType
