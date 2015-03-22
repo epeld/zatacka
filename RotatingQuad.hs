@@ -1,19 +1,30 @@
 module RotatingQuad where
 import Control.Monad.Trans.Reader
+import Control.Monad
+
+import Graphics.UI.GLUT as GLUT
+import Graphics.Rendering.OpenGL
 
 import Transform
 import Graphics
+import Display
 
-transform :: StateTransform Float 
-transform dt _ x = asks (+ 2 * pi * 2000 / dt)
+type State = Float
 
-display :: GLUTContext Float -> DisplayCallback
-display ctx = do
-    putStrLn "New frame.."
+transform :: Transform State
+transform dt _ = asks $ (+ 360 * dt) . currentAngle
+
+display :: Displayer State
+display angle = do
     clear [ColorBuffer]
     color3f 1.0 1.0 1.0
-    rotate 1 $ Vector3 0 0 (1 :: GLfloat)
-    renderPrimitive TriangleFan quad
-    -- TODO draw some stuff here!
-    -- e.g quad
+    preservingMatrix $ do
+        RotatingQuad.rotate $ realToFrac angle
+        renderPrimitive TriangleFan quad
     swapBuffers
+
+rotate :: GLfloat -> IO ()
+rotate = flip GLUT.rotate $ Vector3 0 0 (1 :: GLfloat)
+
+currentAngle :: State -> Float
+currentAngle = id

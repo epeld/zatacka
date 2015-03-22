@@ -8,7 +8,7 @@ import GLUTContext as GLUTC
 type StateRenderer a = Reader a (IO ())
 
 display :: GLUTContext a -> StateRenderer a -> DisplayCallback
-display ctx r = runReader r $ state ctx
+display ctx r = state ctx >>= runReader r
 
 display :: GLUTContext -> DisplayCallback
 display ctx = do

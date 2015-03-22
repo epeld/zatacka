@@ -1,10 +1,13 @@
+--
+-- Transform state
+--
 module Transform where
 import Control.Monad.Trans.Reader
 
 import Time
 import Input
 
-type StateTransform a = DTime -> [InputEvent] -> Reader a a
+type Transform a = DTime -> [Event] -> Reader a a
 
-runTransform :: StateTransform a -> DTime -> [InputEvent] -> a -> a
+runTransform :: Transform a -> DTime -> [Event] -> a -> a
 runTransform = fmap $ fmap runReader

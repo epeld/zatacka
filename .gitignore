@@ -5,3 +5,4 @@ build
 header
 game
 Main
+*.dyn*

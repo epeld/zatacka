@@ -5,6 +5,8 @@ import Control.Monad
 
 import qualified Graphics.UI.GLUT as GLUT
 
+import Concurrency (writeIORef)
+
 type FloatType = Float
 
 type Time = FloatType
@@ -17,11 +19,11 @@ newTimeIORef = newIORef =<< elapsedTime
 
 elapsedTime :: IO Time
 elapsedTime = do
-    ms <- get GLUT.elapsedTime
+    ms <- GLUT.get GLUT.elapsedTime
     return $ fromIntegral ms / 1000
 
 
-newTimeDelta :: TimeIORef a -> IO DTime
+newTimeDelta :: TimeIORef -> IO DTime
 newTimeDelta t = do
     currentTime <- elapsedTime
     lastTime <- writeIORef t currentTime

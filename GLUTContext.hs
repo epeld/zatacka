@@ -7,6 +7,8 @@ import System.IO (IO)
 
 import Control.Lens
 
+import Data.IORef
+
 import Time
 import Input
 
@@ -21,4 +23,4 @@ $(makeLenses ''GLUTContext)
 
 
 state :: GLUTContext a -> IO a
-state = view stateRef . to readIORef
+state = (^. stateRef . to readIORef)

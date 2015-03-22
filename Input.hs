@@ -1,17 +1,19 @@
 module Input where
-import Data.IORef (IORef)
+import Data.IORef (IORef, modifyIORef')
 
 import qualified Graphics.UI.GLUT as GLUT
-import Graphics.UI.GLUT (Key, KeyState, Modifiers, Position, leaveMainLoop)
+import Graphics.UI.GLUT (Key, KeyState, Modifiers, Position, 
+                         leaveMainLoop, KeyboardMouseCallback)
 
-data InputEvent = InputEvent Key KeyState Modifiers GLUT.Position deriving (Show, Eq)
+data Event = Event Key KeyState Modifiers GLUT.Position deriving (Show, Eq)
 
-type InputIORef = IORef [InputEvent]
+type InputIORef = IORef [Event]
 
-handleSpecial :: [InputEvent] -> IO ()
-handleSpecial [] = leaveMainLoop
-handleSpecial xs = return ()
+handleSpecial :: [Event] -> IO ()
+handleSpecial [] = return ()
+handleSpecial xs = putStrLn (show xs) >> leaveMainLoop
 
-keyboardMouse :: InputIORef -> KeyboardMouseCallback
-keyboardMouse iorf key keyState mods pos = modifyIORef' iorf ( event : )
-    where event = InputEvent key keyState mods pos 
+callback :: InputIORef -> KeyboardMouseCallback
+callback iorf key keyState mods pos = modifyIORef' iorf ( event : )
+    where event = Event key keyState mods pos 
+

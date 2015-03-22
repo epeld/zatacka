@@ -3,7 +3,8 @@ import Graphics.UI.GLUT as GLUT
 import qualified GLUTContext as GLUTC
 --import qualified Render
 --import qualified Mutate
-import RotatingQuad
+import RotatingQuad as R
+import Activate
 
 data GameInput = GameInput
 data GameState = GameState
@@ -29,10 +30,10 @@ initialize = do
     setRenderingParameters
 
     putStrLn "Creating Context"
-    ctx <- GLUTC.make RotatingQuad.transform
+    ctx <- context 0
 
     putStrLn "Setting Display Callback"
-    displayCallback $= RotatingQuad.display ctx
+    activate ctx R.transform R.display
 
 
 setGLUTParameters :: IO ()
