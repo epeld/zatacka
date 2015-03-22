@@ -10,17 +10,12 @@ import Transform
 
 type StateMutator a = DTime -> [InputEvent] -> IO a
 
-mutator :: StateMutator a
-mutator _ [] = do
-    putStrLn $ unwords ["elapsed since last tick", show delta]
+mutator :: StateMutator ()
+mutator delta [] = do
+    delta `seq` return ()
+    --putStrLn $ unwords ["elapsed since last tick", show delta]
 
 mutator delta input = do
+    putStrLn (show input)
     leaveMainLoop
 
-
-
--- Construct a state mutator from a pure state transform
-make :: a -> StateTransform a -> StateMutator a
-make initial f =
-    let s = newIORef initial
-    in \dt input -> modifyIORef' s (f dt input)
