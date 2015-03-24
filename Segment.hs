@@ -12,10 +12,34 @@ import Control.Lens
 import Geometry
 import Time
 
+data SegmentA a = Segment { _content :: a, _duration :: DTime } deriving Functor
+$(makeLenses ''Segment)
+
+type Segment = Segment (Maybe Direction)
+content = direction
+
+class Reversible a where
+    reversed :: a -> a
+
+instance Reversible Direction where
+    reversed Right = Left
+    reversed Left = Right
+
+instance Reversible Segment where
+    reversed = fmap reversed
+
+instance Reversible [Segment] where
+    reversed = fmap reversed. reverse
+
+newtype Backwards = Backwards [Segment] deriving (Show, Eq, Functor)
+
+getSegments :: Backwards -> [Segment]
+getSegments (Backwards segs) = reversed segs
+
 data Direction = Left | Right deriving (Show, Eq)
 
-data Segment = Segment { _direction :: Maybe Direction, _duration :: DTime }
-$(makeLenses ''Segment)
+--data Segment = Segment { _direction :: Maybe Direction, _duration :: DTime }
+-- $(makeLenses ''Segment)
 
 data Checkpoint = Checkpoint { _position :: Position FloatType, _heading :: Heading FloatType }
 $(makeLenses ''Checkpoint)
