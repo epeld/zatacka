@@ -12,13 +12,14 @@ import Display
 type State = Float
 
 transform :: Transform State
-transform dt _ = asks $ (+ 360 * dt) . currentAngle
+transform dt _ = asks $ (+ 180 * dt) . currentAngle
 
 display :: Displayer State
 display angle = do
     clear [ColorBuffer]
     color3f 1.0 1.0 1.0
     preservingMatrix $ do
+        scale 10 10 (10 :: GLfloat)
         RotatingQuad.rotate $ realToFrac angle
         renderPrimitive TriangleFan quad
     swapBuffers

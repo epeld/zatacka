@@ -26,4 +26,5 @@ quad = do
     vertex2f (-1) 1
     vertex2f 1 (-1)
     vertex2f 1 1
+    vertex2f (-1) 1
     
