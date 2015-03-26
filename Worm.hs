@@ -1,12 +1,14 @@
+{-# LANGUAGE TemplateHaskell, FlexibleInstances #-}
+{-# LANGUAGE NoMonomorphismRestriction #-}
 module Worm where
-import Geometry
-import Turn
+import Data.Maybe
 
-data Worm = Worm { turns :: [Turn], initial :: State } deriving (Show, Eq)
+import Transform
+import Display
+import Graphics
+import Input
+import Segment
 
-states :: Functor f => Worm -> f Time -> f State
-states w = fmap (state w)
-
-state :: Worm -> Time -> State
-state (Worm turns s) = Geometry.state turns s
+data Worm = Worm { segments :: [Segment], initial :: Checkpoint } deriving (Show, Eq)
+$(makeLenses ''Worm)
 

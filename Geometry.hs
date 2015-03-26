@@ -1,9 +1,5 @@
 module Geometry where
-import Linear.Matrix
-import Linear.V
-import Linear.V2
-import Linear.Metric
-import Linear.Vector hiding (unit)
+import Linear hiding (unit)
 import Control.Lens
 
 type Position = V2
@@ -13,7 +9,7 @@ type Heading = V2
 -- meaning the point that a tangent line with the angle 'omega' (relative to heading) were to touch
 -- given a circle of radius r
 tanpt :: (Floating a, Ord a) => Heading a -> a -> a -> Position a
-tanpt h r omega = rvec - (rvec `rotate` omega)
+tanpt h r omega = rvec - (rvec `Geometry.rotate` omega)
     where rvec = r * sign omega *^ uniperp h 
     
 uniperp :: Floating a => V2 a -> V2 a
@@ -33,7 +29,7 @@ rotation a =
     _y._x .~  sin a $ 
     _y._y .~  cos a $
 
-    eye2
+    identity
 
 when :: (a -> Bool) -> (a -> a) -> a -> a
 when pred f x = if pred x then f x else x

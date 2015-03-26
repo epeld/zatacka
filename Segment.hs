@@ -12,38 +12,31 @@ import Control.Lens
 import Geometry
 import Time
 
-data SegmentA a = Segment { _content :: a, _duration :: DTime } deriving Functor
-$(makeLenses ''Segment)
+data SegmentA a = Segment { _content :: a, _duration :: DTime }
+$(makeLenses ''SegmentA)
 
-type Segment = Segment (Maybe Direction)
-content = direction
+type Segment = SegmentA DirectionChange
 
-class Reversible a where
-    reversed :: a -> a
+change :: Lens Segment (SegmentA b) DirectionChange b
+change = content
 
-instance Reversible Direction where
-    reversed Right = Left
-    reversed Left = Right
-
-instance Reversible Segment where
-    reversed = fmap reversed
-
-instance Reversible [Segment] where
-    reversed = fmap reversed. reverse
-
-newtype Backwards = Backwards [Segment] deriving (Show, Eq, Functor)
-
-getSegments :: Backwards -> [Segment]
-getSegments (Backwards segs) = reversed segs
 
 data Direction = Left | Right deriving (Show, Eq)
 
---data Segment = Segment { _direction :: Maybe Direction, _duration :: DTime }
--- $(makeLenses ''Segment)
+type DirectionChange = Maybe Direction
 
 data Checkpoint = Checkpoint { _position :: Position FloatType, _heading :: Heading FloatType }
 $(makeLenses ''Checkpoint)
 
+join :: Eq a => [SegmentA a] -> [SegmentA a] -> [Segment a]
+join a [] = a
+join aas (b:bs) = concat [dropLast 1 aas, takeLast 1 aas `join` b, bs]
+              
+
+join' :: Eq a => SegmentA a -> SegmentA a -> [SegmentA a]
+join' a b = if (a' ^. content) == (b ^. content)
+            then [a & duration +~ (b ^. duration)]
+            else [a, b]
 
 -- Compute checkpoint at time 't', given a list of segments and a starting position
 checkpoint :: [Segment] -> Time -> Checkpoint -> Checkpoint
@@ -56,7 +49,7 @@ checkpoint segs t = appEndo $ mconcat $ endo `map` cut segs t
 -- Cut off the segments that happen after a given time
 -- Might split the final segment in half if it is still ongoing when the cut happens
 cut :: [Segment] -> Time -> [Segment]
-cut segs t = uncurry Segment `fmap` zip (dirs segs) dts
+cut segs t = uncurry Segment `fmap` zip (changes segs) dts
     where dts = takeWhile (> 0) (segs `clamped` t)
 
 --
@@ -108,8 +101,8 @@ ends ::  [Segment] -> [DTime]
 ends = drop 1. sums. dts
 
 -- extract diretions from segments
-dirs :: [Segment] -> [Maybe Direction]
-dirs = fmap (^. direction)
+changes :: [Segment] -> [Maybe Direction]
+changes = fmap (^. direction)
 
 dts :: [Segment] -> [DTime]
 dts = fmap (^. duration)
@@ -142,5 +135,9 @@ angularSpeed :: Floating a => a
 angularSpeed = pi / 8
 
 dropLast :: Int -> [a] -> [a]
-dropLast n xs = map snd $ zip (drop n xs) xs
+dropLast n = map snd $ zip (drop n xs) xs
+dropLast n = reverse. drop n. reverse
+
+takeLast :: Int -> [a] -> [a]
+takeLast n = reverse. take n. reverse
 
