@@ -8,7 +8,7 @@ import Geometry
 import Linear
 import Time
 
-data Checkpoint = Checkpoint { _position :: Position FloatType, _heading :: Heading FloatType }
+data Checkpoint = Checkpoint { _position :: Position FloatType, _heading :: Heading FloatType } deriving (Show, Eq)
 $(makeLenses ''Checkpoint)
 
 -- Apply a direction change (or stop one) and calculate next checkpoint
