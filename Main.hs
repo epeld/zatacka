@@ -1,7 +1,7 @@
 import Graphics.UI.GLUT as GLUT
 
 import qualified GLUTContext as GLUTC
-import RotatingQuad as R
+import Zatacka as Game
 import Activate
 import Display
 
@@ -23,9 +23,9 @@ initialize = do
     Display.setup "Zatachoo"
 
     putStrLn "Creating Context"
-    ctx <- context 0
+    ctx <- context Game.initial
 
     putStrLn "Setting Display Callback"
-    activate ctx R.transform R.display
+    activate ctx Game.transform Game.display
 
 

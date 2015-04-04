@@ -1,24 +1,23 @@
 module Control where
-import Worm
+import Prelude hiding (Left, Right)
+import Control.Lens
 
-changes :: [Input] -> [DirectionChange]
-changes input = []
+import Input
+import Graphics.UI.GLUT
+import Direction
+import qualified Segment as S
+import qualified Worm
 
--- TODO write lookup from key to Change
+change :: [Input.Event] -> Maybe DirectionChange
+change input = Nothing
 
-control :: Transform Worm
-control dt input = process dt (changes input)
+down :: [(Key, DirectionChange)]
+down = [
+    (Char 'k', Just Left), 
+    (Char 'l', Just Right)
+    ]
 
-process dt [] = segments . head . duration +~ dt
-process dt (x : _) = process' x -- events appear so that first element happened last
+up :: [(Key, DirectionChange)]
+up = down & mapped . _2 .~ Nothing 
 
-process' :: DTime -> Event -> Worm -> Worm
-process' dt ch = segments `over` join [Segment ch dt]
-
---
--- Helpers
---
-
-head :: Lens [a] [a] a a
-head _ [] = []
-head f (x:xs) = (f x) : xs
+control dt input = Worm.extend dt (Control.change input)

@@ -10,22 +10,19 @@ import Data.Monoid
 import Linear
 import Control.Lens
 
+import Direction
 import Geometry
 import Time
 
 import ListUtils
 
-data SegmentA a = Segment { _content :: a, _duration :: DTime }
+data SegmentA a = SegmentA { _content :: a, _duration :: DTime }
 $(makeLenses ''SegmentA)
 
 type Segment = SegmentA DirectionChange
 
 change :: Lens Segment (SegmentA b) DirectionChange b
 change = content
-
-data Direction = Left | Right deriving (Show, Eq)
-
-type DirectionChange = Maybe Direction
 
 
 --

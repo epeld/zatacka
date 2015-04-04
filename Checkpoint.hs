@@ -2,18 +2,37 @@
 {-# LANGUAGE NoMonomorphismRestriction #-}
 module Checkpoint where
 import Control.Lens
+import Control.Applicative
 
 import Segment
+import Direction
 import Geometry
 import Linear
-import Time
+import Time hiding (FloatType)
+
+type FloatType = Float
 
 data Checkpoint = Checkpoint { _position :: Position FloatType, _heading :: Heading FloatType } deriving (Show, Eq)
 $(makeLenses ''Checkpoint)
 
+_coords :: Lens' (Position a) (a, a)
+_coords = iso (\v -> (v ^. _x, v ^. _y)) (uncurry V2)
+
+_pcoords :: Lens' Checkpoint (FloatType, FloatType)
+_pcoords = position . _coords
+
+_posx :: Lens' Checkpoint FloatType
+_posx = _pcoords . _1
+
+_posy :: Lens' Checkpoint FloatType
+_posy = _pcoords . _2
+
+_hcoords :: Lens' Checkpoint (FloatType, FloatType)
+_hcoords = heading . _coords
+
 -- Apply a direction change (or stop one) and calculate next checkpoint
-apply :: Maybe Direction -> DTime -> Checkpoint -> Checkpoint
-apply d = maybe extrapolate turn d
+next :: Maybe Direction -> DTime -> Checkpoint -> Checkpoint
+next d = maybe extrapolate turn d
 
 -- Calculate next checkpoint after turn
 turn :: Direction -> DTime -> Checkpoint -> Checkpoint

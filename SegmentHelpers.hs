@@ -1,6 +1,7 @@
 module SegmentHelpers where
 import Control.Lens
 
+import Direction
 import Segment
 import ListUtils
 import Time
@@ -27,5 +28,5 @@ contents = fmap (^. content)
 changes :: [Segment] -> [Maybe Direction]
 changes = contents
 
-dts :: [Segment] -> [DTime]
+dts :: Functor f => f Segment -> f DTime
 dts = fmap (^. duration)
