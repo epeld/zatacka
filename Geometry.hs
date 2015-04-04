@@ -1,39 +1,49 @@
+{-# LANGUAGE TemplateHaskell, FlexibleInstances #-}
+{-# LANGUAGE NoMonomorphismRestriction #-}
 module Geometry where
-import Linear hiding (unit)
+import Linear
 import Control.Lens
+import Control.Monad.Trans.State.Strict
 
-type Position = V2
-type Heading = V2
+import TimeSeries
+import Direction
+import Checkpoint
 
--- calculate the tangent point of a circle
--- meaning the point that a tangent line with the angle 'omega' (relative to heading) were to touch
--- given a circle of radius r
-tanpt :: (Floating a, Ord a) => Heading a -> a -> a -> Position a
-tanpt h r omega = rvec - (rvec `Geometry.rotate` omega)
-    where rvec = r * sign omega *^ uniperp h 
-    
-uniperp :: Floating a => V2 a -> V2 a
-uniperp = unit. perp
+import qualified LinearUtils as LU
 
-unit :: Floating a => Heading a -> Heading a
-unit = signorm
+data GeometryA a = Line { _start :: V2 a, _end :: V2 a } | Arc { _centre :: V2 a, _start :: V2 a, _end :: V2 a }
+$(makeLenses ''GeometryA)
 
-rotate :: Floating a => V2 a -> a -> V2 a
-rotate v a = rotation a !* v
+type Geometry = GeometryA FloatType
 
-rotation :: Floating a => a -> M22 a
-rotation a = 
-    _x._x .~  cos a $
-    _x._y .~ -sin a $ 
+type Turn = Direction
+type DirectionChanges = TimeSeries (Maybe Turn)
+type TurnEvent = Event (Maybe Turn)
 
-    _y._x .~  sin a $ 
-    _y._y .~  cos a $
+geometries :: [TurnEvent] -> State Checkpoint [Geometry]
+geometries = sequence . fmap geometry
 
-    identity
+geometry :: TurnEvent -> State Checkpoint Geometry
+geometry ev = do
+    cp <- get
+    let geom = g (ev ^. content)
+        g Nothing = line cp (ev ^. duration)
+        g (Just d) = arc cp (omega d $ ev ^. duration)
+    position .= geom ^. end
+    heading .= endHeading ev cp
+    return geom
 
-when :: (a -> Bool) -> (a -> a) -> a -> a
-when pred f x = if pred x then f x else x
+omega Direction.Left dt = -dt
+omega Direction.Right dt = dt
 
-sign :: (Num a, Ord a) => a -> a
-sign a = if 0 <= a then 1 else -1
+endHeading ev cp = e (ev ^. content)
+    where
+    e Nothing = cp ^. heading
+    e (Just d) = LU.rotation (omega d $ ev ^. duration) !* (cp ^. heading)
 
+line cp d = Line { _start = cp ^. position, _end = cp ^. position + cp ^. heading ^* d }
+arc cp omga = 
+    Arc { _centre = c, _start = cp ^. position, _end = c - LU.rotation omga !* cv }
+    where 
+    cv = LU.centre (cp ^. heading) omga
+    c = (cp ^. position) + c
