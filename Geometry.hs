@@ -2,60 +2,48 @@
 {-# LANGUAGE NoMonomorphismRestriction #-}
 module Geometry where
 import Linear
+
 import Control.Lens
+import Control.Applicative
 import Control.Monad.Trans.State.Strict
+
+import Data.Maybe
 
 import TimeSeries
 import Direction
-import Checkpoint
 
 import qualified LinearUtils as LU
 
--- Note: arc info is currently not enough
-data GeometryA a = Line { _start :: V2 a, _end :: V2 a } | Arc { _centre :: V2 a, _start :: V2 a, _end :: V2 a }
+data GeometryA a = Line { _start :: V2 a, _length :: a, _heading :: V2 a } | Arc { _start :: V2 a, _omega :: a }
 $(makeLenses ''GeometryA)
 
-type Geometry = GeometryA FloatType
+correction :: Num a => GeometryA a -> a
+correction (Arc _ o) = o
+correction _ = 0
 
-type Turn = Direction
-type DirectionChanges = TimeSeries (Maybe Turn)
-type TurnEvent = Event (Maybe Turn)
+correctionM :: Num a => GeometryA a -> M22 a
+correctionM = LU.rotation . correction
 
+heading0 :: (Eq a, Floating a) => GeometryA a -> V2 a
+heading0 (Arc s o) = signum o *^ LU.uniperp (s - ce)
+heading0 (Line _ _ h) = h
 
-geometries :: [TurnEvent] -> State Checkpoint [Geometry]
-geometries = sequence . fmap geometry
+heading1 :: (Eq a, Floating a) => GeometryA a -> V2 a
+heading1 a = LU.rotation (correction a) !* heading0 a
 
+position0 :: GeometryA a -> a
+position0 a = a ^. start
 
-geometry :: TurnEvent -> State Checkpoint Geometry
-geometry ev = do
-    cp <- get
-    let geom = g (ev ^. content)
-        g Nothing = line cp (ev ^. duration)
-        g (Just d) = arc cp (omega d $ ev ^. duration)
-    position .= geom ^. end
-    heading .= endHeading ev cp
-    return geom
+position1 x = position0 + cp - correctionM !* cp
+    where cp = centre x .? zero
 
+centre :: (Floating a, Eq a) => GeometryA a -> Maybe (V2 a)
+centre x = pure (centre' h) <$> x ^? omega
+    where h = heading0 x
 
-line :: Checkpoint -> FloatType -> Geometry
-line cp d = Line { _start = cp ^. position, _end = cp ^. position + cp ^. heading ^* d }
+centre' :: (Floating a, Eq a) => V2 a -> a -> V2 a
+centre' h omga = signum omga *^ LU.uniperp h
 
-
-arc :: Checkpoint -> FloatType -> Geometry
-arc cp omga = 
-    Arc { _centre = c, _start = cp ^. position, _end = c - LU.rotation omga !* cv }
-    where 
-    cv = LU.centre (cp ^. heading) omga
-    c = (cp ^. position) + c
-
-
-
-
-endHeading ev cp = e (ev ^. content)
-    where
-    e Nothing = cp ^. heading
-    e (Just d) = LU.rotation (omega d $ ev ^. duration) !* (cp ^. heading)
-
-
-omega Direction.Left dt = -dt
-omega Direction.Right dt = dt
+(.?) :: Maybe a -> a -> a
+(.?) = flip fromMaybe
+infixl 6 .? 
