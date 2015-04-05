@@ -17,6 +17,32 @@ main = hspec $ do
     testRotations
     testHeading
     testCenterPoints
+    testEndPoints
+
+testEndPoints = 
+    describe "Turn End Points" $ do
+        let cp = Checkpoint (V2 5 0) (V2 0 1)
+
+        it "computes 90-degree left turn" $ do
+            let geo = Geometry cp (Just $ (-pi/2))
+            (geo ^. position1) `shouldAlmostBe` (V2 4 1)
+        
+        it "computes 180-degree left turn" $ do
+            let geo = Geometry cp (Just $ (-pi))
+            (geo ^. position1) `shouldAlmostBe` V2 3 0
+
+        it "computes 90-degree right turn" $ do
+            let geo = Geometry cp (Just $ (pi/2))
+            (geo ^. position1) `shouldAlmostBe` (V2 6 1)
+        
+        it "computes 180-degree right turn" $ do
+            let geo = Geometry cp (Just $ pi)
+            (geo ^. position1) `shouldAlmostBe` V2 7 0
+
+        it "returns to original position after 360 degrees rotation" $ do
+            let geo = Geometry cp (Just $ 2 * pi)
+            (geo ^. position1) `shouldAlmostBe` (geo ^. position0)
+
 
 testCenterPoints =
     describe "Turn Center Points" $ do
@@ -44,8 +70,16 @@ testHeading =
         let cp = Checkpoint (V2 5 0) (V2 0 1)
 
         it "corrects course 45 degrees clockwise" $ do
-            let geo = Geometry cp (Just (-pi/4))
+            let geo = Geometry cp (Just (pi/4))
             (geo ^. heading1) `shouldAlmostBe`  V2 (1 / sqrt 2) (1 / sqrt 2)
+
+        it "corrects course 90 degrees counter-clockwise" $ do
+            let geo = Geometry cp (Just (-pi/2))
+            (geo ^. heading1) `shouldAlmostBe`  V2 (-1) 0
+
+        it "corrects course 90 degrees clockwise" $ do
+            let geo = Geometry cp (Just (pi/2))
+            (geo ^. heading1) `shouldAlmostBe`  V2 1 0
 
         it "keeps course steady" $ do
             let geo = Geometry cp Nothing

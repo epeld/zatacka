@@ -26,15 +26,17 @@ heading0 :: Lens' Geometry Heading
 heading0 = checkpoint . Checkpoint.heading
 
 heading1 = to heading1'
-heading1' a = rotate ang (a ^. heading0)
+heading1' a = rotate (-ang) (a ^. heading0)
     where ang = a ^. correction .? 0
 
 position0 :: Lens' Geometry Position
 position0 = checkpoint . Checkpoint.position
 
 position1 = to position1'
-position1' a = a ^. position0 + cp - correctionM a !* cp
-    where cp = centre a .? zero
+position1' a = a ^. position0 + cp - (r .? identity) !* cp
+    where
+    cp = centre a .? zero
+    r = fmap (LU.rotation . negate) (a ^. correction)
 
 checkpoint0 = checkpoint
 checkpoint1 = to checkpoint1'
@@ -49,15 +51,10 @@ centre x = centre' h <$> x ^. correction
     where h = x ^. heading0
 
 centre' :: Heading -> FloatType -> Position
-centre' h omga = signum omga *^ LU.uniperp h
+centre' h omga = -1 * signum omga *^ LU.uniperp h
 
 
---
--- Rotation matrix to carry out a course correction
---
 
-correctionM :: Geometry -> M22 FloatType
-correctionM a = fmap LU.rotation (a ^. correction) .? identity
 
 
 rotate :: FloatType -> V2 FloatType -> V2 FloatType
