@@ -1,7 +1,7 @@
 {-# LANGUAGE TemplateHaskell, FlexibleInstances #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 module Geometry where
-import Linear
+import Linear hiding (rotate)
 
 import Control.Lens
 import Control.Applicative
@@ -9,40 +9,59 @@ import Control.Monad.Trans.State.Strict
 
 import Data.Maybe
 
+import Checkpoint
 import TimeSeries
 import Direction
 
 import qualified LinearUtils as LU
 
-data GeometryA a = Line { _start :: V2 a, _length :: a, _heading :: V2 a } | Arc { _start :: V2 a, _omega :: a }
-$(makeLenses ''GeometryA)
+data Geometry = Geometry { _checkpoint :: Checkpoint, _correction :: Maybe FloatType } deriving (Show, Eq)
+$(makeLenses ''Geometry)
 
-correction :: Num a => GeometryA a -> a
-correction (Arc _ o) = o
-correction _ = 0
+--
+-- Vectors, 0 meaning start and 1 meaning end
+--
 
-correctionM :: Num a => GeometryA a -> M22 a
-correctionM = LU.rotation . correction
+heading0 :: Lens' Geometry Heading
+heading0 = checkpoint . Checkpoint.heading
 
-heading0 :: (Eq a, Floating a) => GeometryA a -> V2 a
-heading0 (Arc s o) = signum o *^ LU.uniperp (s - ce)
-heading0 (Line _ _ h) = h
+heading1 = to heading1'
+heading1' a = rotate ang (a ^. heading0)
+    where ang = a ^. correction .? 0
 
-heading1 :: (Eq a, Floating a) => GeometryA a -> V2 a
-heading1 a = LU.rotation (correction a) !* heading0 a
+position0 :: Lens' Geometry Position
+position0 = checkpoint . Checkpoint.position
 
-position0 :: GeometryA a -> a
-position0 a = a ^. start
+position1 = to position1'
+position1' a = a ^. position0 + cp - correctionM a !* cp
+    where cp = centre a .? zero
 
-position1 x = position0 + cp - correctionM !* cp
-    where cp = centre x .? zero
+checkpoint0 = checkpoint
+checkpoint1 = to checkpoint1'
+checkpoint1' g = g ^. checkpoint & position .~ (g ^. position1) & heading .~ (g ^. heading1)
 
-centre :: (Floating a, Eq a) => GeometryA a -> Maybe (V2 a)
-centre x = pure (centre' h) <$> x ^? omega
-    where h = heading0 x
+--
+-- Arc center-points
+--
 
-centre' :: (Floating a, Eq a) => V2 a -> a -> V2 a
+centre :: Geometry -> Maybe Position
+centre x = centre' h <$> x ^. correction
+    where h = x ^. heading0
+
+centre' :: Heading -> FloatType -> Position
 centre' h omga = signum omga *^ LU.uniperp h
+
+
+--
+-- Rotation matrix to carry out a course correction
+--
+
+correctionM :: Geometry -> M22 FloatType
+correctionM a = fmap LU.rotation (a ^. correction) .? identity
+
+
+rotate :: FloatType -> V2 FloatType -> V2 FloatType
+rotate a v = LU.rotation a !* v
 
 (.?) :: Maybe a -> a -> a
 (.?) = flip fromMaybe
