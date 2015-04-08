@@ -20,9 +20,9 @@ insert ev = over events (insert' ev)
 
 insert' :: Eq a => Event a -> [Event a] -> [Event a]
 insert' ev [] = [ev]
-insert' ev evs@(x : xs) = 
+insert' ev evs@(x : _) = 
     if x ^. content == ev ^. content
-    then (x & duration +~ ev ^.duration) : evs -- evs & _head . duration +~ ev ^. duration 
+    then evs & _head . duration +~ ev ^. duration 
     else ev : evs
 
 
