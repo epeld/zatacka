@@ -35,10 +35,10 @@ display s = do
     clear [ColorBuffer]
     color3f 1.0 0.5 0
 
-    putStrLn (show $ view (player1.timeseries.events) s)
+    --putStrLn (show $ view (player1.timeseries.events) s)
 
     let geo = geometries (s ^. player1.timeseries.events. to reverse) (s ^. player1. P.initial)
-    putStrLn $ show geo
+    --putStrLn $ show geo
 
     mapM_ RG.render geo
     swapBuffers
@@ -47,7 +47,7 @@ display s = do
 
 initial :: State
 initial = State { _player1 = p, _time = 0 }
-    where p = P.player (V2 100 100) (V2 50 0)
+    where p = P.player (V2 100 100) (V2 1 0)
 
 
 {-

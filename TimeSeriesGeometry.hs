@@ -27,7 +27,15 @@ geometry :: TurnEvent -> Checkpoint -> Geometry
 geometry ev cp = 
     Geometry { 
         _checkpoint = cp,
-        _correction = (*) <$> fmap sign d <*> pure dt}
-    where 
-    dt = ev ^. duration
-    d = ev ^. content
+        _length = ev ^. duration * (maybe 1 sign $ ev ^. content),
+        _shape = shapeForEvent ev }
+
+
+
+shapeForEvent :: TurnEvent -> Shape
+shapeForEvent = views content shapeForEvent'
+
+shapeForEvent' :: Maybe Turn -> Shape
+shapeForEvent' Nothing = Line
+shapeForEvent' _ = Arc
+    
