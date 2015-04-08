@@ -10,43 +10,47 @@ import Linear
 
 import Time
 import Transform
-import Segment
 import Display
 import Graphics
 import Input
 import Control
 import Checkpoint
-import qualified Worm 
+import TimeSeries
+import TimeSeriesGeometry
+import Player as P
+import RenderGeometry as RG
 
-data State = State { _worm :: Worm.Worm, _time :: Time }
+data State = State { _player1 :: Player, _time :: Time }
 $(makeLenses ''State)
-
-initial :: State
-initial = State { _worm = w, _time = 0 }
-    where w = Worm.worm cp
-          cp = Checkpoint (V2 100 100) (V2 50 0)
 
 transform :: Transform State
 transform dt input = do
     s <- ask
-    let s' = s & worm %~ Worm.extend dt (Control.change input) & time +~ dt
-    return s'
+    let ev = TimeSeries.Event (Control.change input) dt
+    s & player1 %~ happened ev & return
 
 
 display :: Displayer State
 display s = do 
     clear [ColorBuffer]
     color3f 1.0 0.5 0
-    renderWorm (s ^. worm)
+
+    putStrLn (show $ view (player1.timeseries.events) s)
+
+    let geo = geometries (s ^. player1.timeseries.events. to reverse) (s ^. player1. P.initial)
+    putStrLn $ show geo
+
+    mapM_ RG.render geo
     swapBuffers
 
 
-renderWorm :: Worm.Worm -> IO ()
-renderWorm w = Graphics.lines (w ^. to interp)
-    where interp = Worm.checkpoints 0.3
-    
+
+initial :: State
+initial = State { _player1 = p, _time = 0 }
+    where p = P.player (V2 100 100) (V2 50 0)
 
 
+{-
 putInfo :: State -> IO ()
 putInfo s = do
     let w = s ^. worm 
@@ -57,3 +61,4 @@ putInfo s = do
     putStrLn ("Worm: " ++ (show w))
     putStrLn ("Worm time: " ++ (show $ Worm.endTime w))
     putStrLn (show cps)
+-}

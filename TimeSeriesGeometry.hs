@@ -12,10 +12,10 @@ import Checkpoint
 
 import qualified LinearUtils as LU
 
-type Turn = Direction
-type DirectionChanges = TimeSeries (Maybe Turn)
 type TurnEvent = Event (Maybe Turn)
 
+geometries :: [TurnEvent] -> Checkpoint -> [Geometry]
+geometries evs = evalState (geometriesS evs)
 
 geometriesS :: [TurnEvent] -> State Checkpoint [Geometry]
 geometriesS = sequence . fmap geometryS

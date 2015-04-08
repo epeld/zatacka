@@ -19,29 +19,37 @@ main = hspec $ do
     testCenterPoints
     testEndPoints
 
+-- TODO test that we can move straight..
+
 testEndPoints = 
     describe "Turn End Points" $ do
         let cp = Checkpoint (V2 5 0) (V2 0 1)
+            arc = Geometry cp Arc
 
         it "computes 90-degree left turn" $ do
-            let geo = Geometry cp (Just $ (-pi/2))
+            let geo = arc (-pi/2)
             (geo ^. position1) `shouldAlmostBe` (V2 4 1)
         
         it "computes 180-degree left turn" $ do
-            let geo = Geometry cp (Just $ (-pi))
+            let geo = arc (-pi)
             (geo ^. position1) `shouldAlmostBe` V2 3 0
 
         it "computes 90-degree right turn" $ do
-            let geo = Geometry cp (Just $ (pi/2))
+            let geo = arc (pi/2)
             (geo ^. position1) `shouldAlmostBe` (V2 6 1)
         
         it "computes 180-degree right turn" $ do
-            let geo = Geometry cp (Just $ pi)
+            let geo = arc pi
             (geo ^. position1) `shouldAlmostBe` V2 7 0
 
         it "returns to original position after 360 degrees rotation" $ do
-            let geo = Geometry cp (Just $ 2 * pi)
+            let geo = arc (2 * pi)
             (geo ^. position1) `shouldAlmostBe` (geo ^. position0)
+
+        it "keeps going when using Line" $ do
+            let geo = Geometry cp Line len
+                len = 10.0
+            (geo ^. position1) `shouldAlmostBe` (geo ^. position0 + len *^ (cp ^. heading))
 
 
 testCenterPoints =
@@ -49,40 +57,41 @@ testCenterPoints =
         let cp = Checkpoint (V2 5 0) (V2 0 1)
 
         it "computes right-turn center point to the right" $ do
-            let geo = Geometry cp (Just $ (pi/10))
+            let geo = Geometry cp Arc (pi/10)
             (fromJust $ centre geo) `shouldAlmostBe` V2 1 0
         
         it "computes right-turn center point to the right (considering orientation)" $ do
-            let geo = Geometry (cp & heading . _y .~ -1) (Just $ pi/10)
+            let geo = Geometry (cp & heading . _y .~ -1) Arc (pi/10)
             (fromJust $ centre geo) `shouldAlmostBe` V2 (-1) 0
 
         it "computes left-turn center point to the left" $ do
-            let geo = Geometry cp (Just $ (-pi/20))
+            let geo = Geometry cp Arc (-pi/20)
             (fromJust $ centre geo) `shouldAlmostBe` V2 (-1) 0
 
         it "computes left-turn center point to the left (considering orientation)" $ do
-            let geo = Geometry (cp & heading .~ V2 1 0) (Just $ (-pi/5))
+            let geo = Geometry (cp & heading .~ V2 1 0) Arc (-pi/5)
             (fromJust $ centre geo) `shouldAlmostBe` V2 0 1
 
 
 testHeading =
     describe "Heading Calculations" $ do
         let cp = Checkpoint (V2 5 0) (V2 0 1)
+            arc = Geometry cp Arc
 
         it "corrects course 45 degrees clockwise" $ do
-            let geo = Geometry cp (Just (pi/4))
+            let geo = arc (pi/4)
             (geo ^. heading1) `shouldAlmostBe`  V2 (1 / sqrt 2) (1 / sqrt 2)
 
         it "corrects course 90 degrees counter-clockwise" $ do
-            let geo = Geometry cp (Just (-pi/2))
+            let geo = arc (-pi/2)
             (geo ^. heading1) `shouldAlmostBe`  V2 (-1) 0
 
         it "corrects course 90 degrees clockwise" $ do
-            let geo = Geometry cp (Just (pi/2))
+            let geo = arc (pi/2)
             (geo ^. heading1) `shouldAlmostBe`  V2 1 0
 
         it "keeps course steady" $ do
-            let geo = Geometry cp Nothing
+            let geo = Geometry cp Line 10
             geo ^. heading1 `shouldBe` geo ^. heading0
 
             
