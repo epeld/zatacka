@@ -1,11 +1,21 @@
+{-# LANGUAGE TemplateHaskell, FlexibleInstances #-}
+{-# LANGUAGE NoMonomorphismRestriction #-}
 module Input where
+import Control.Lens
+
 import Data.IORef (IORef, modifyIORef')
 
 import qualified Graphics.UI.GLUT as GLUT
 import Graphics.UI.GLUT (Key(..), KeyState(..), Modifiers, Position, 
                          leaveMainLoop, KeyboardMouseCallback)
 
-data Event = Event Key KeyState Modifiers GLUT.Position deriving (Show, Eq)
+data Event = Event {
+    _key :: Key,
+    _keyState :: KeyState,
+    _modifiers :: Modifiers,
+    _position :: GLUT.Position } deriving (Show, Eq)
+
+makeLenses ''Event
 
 type InputIORef = IORef [Event]
 

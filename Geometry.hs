@@ -48,7 +48,7 @@ position1' a = case a ^. shape of
     Arc -> a ^. position0 + cp - (LU.rotation (- a ^. length)) !* cp
     Line -> a ^. position0 + a ^. heading0 ^* a ^. length
     where
-    cp = centre a .? zero
+    cp = (centre a .? zero) ^* 10
 
 checkpoint0 = checkpoint
 checkpoint1 = to checkpoint1'

@@ -6,14 +6,24 @@ import Input
 import Graphics.UI.GLUT
 import Direction
 
-change :: [Input.Event] -> (Maybe Turn)
-change input = Nothing
+type DirectionChange = Maybe Turn
 
-down :: [(Key, Maybe Turn)]
-down = []
---    (Char 'k', Just Left), 
---    (Char 'l', Just Right)
---    ]
+change :: [Input.Event] -> Maybe DirectionChange
+change [] = Nothing
+change (x:_) = case x ^. keyState of
+    Down -> Just $ lookup k keys
+    Up -> lookup k upkeys
+    where
+    upkeys = zip up $ repeat Nothing
+    k = x ^. key
 
-up :: [(Key, Maybe Turn)]
-up = down & mapped . _2 .~ Nothing 
+keys :: [(Key, Turn)]
+keys = [
+    (Char 'a', Left),
+    (Char 's', Right),
+    (SpecialKey KeyLeft, Left),
+    (SpecialKey KeyRight, Right)]
+
+
+up :: [Key]
+up = fmap fst keys

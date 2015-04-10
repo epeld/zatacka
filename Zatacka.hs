@@ -2,6 +2,7 @@
 {-# LANGUAGE NoMonomorphismRestriction #-}
 module Zatacka where
 import Control.Lens
+import Control.Applicative
 import Control.Monad.Trans.Reader
 
 import Graphics.UI.GLUT as GLUT
@@ -26,8 +27,8 @@ $(makeLenses ''State)
 transform :: Transform State
 transform dt input = do
     s <- ask
-    let ev = TimeSeries.Event (Control.change input) dt
-    s & player1 %~ happened ev & return
+    let ev = TimeSeries.Event <$> Control.change input <*> pure dt
+    s & player1 %~ P.change dt ev & return
 
 
 display :: Displayer State
