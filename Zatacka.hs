@@ -36,10 +36,10 @@ display s = do
     clear [ColorBuffer]
     color3f 1.0 0.5 0
 
-    --putStrLn (show $ view (player1.timeseries.events) s)
+    -- putStrLn (show $ view (player1.timeseries.events) s)
 
     let geo = geometries (s ^. player1.timeseries.events. to reverse) (s ^. player1. P.initial)
-    --putStrLn $ show $ length geo
+    -- putStrLn $ show $ length geo
 
     mapM_ RG.render geo
     swapBuffers
@@ -50,16 +50,3 @@ initial :: State
 initial = State { _player1 = p, _time = 0 }
     where p = P.player (V2 100 100) (V2 10 0)
 
-
-{-
-putInfo :: State -> IO ()
-putInfo s = do
-    let w = s ^. worm 
-        cps = Worm.checkpoints 0.3 w
-        t = s ^. time
-    putStrLn "Info:"
-    putStrLn ("Time: " ++ (show $ t))
-    putStrLn ("Worm: " ++ (show w))
-    putStrLn ("Worm time: " ++ (show $ Worm.endTime w))
-    putStrLn (show cps)
--}

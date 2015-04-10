@@ -24,7 +24,7 @@ handleSpecial [] = return ()
 handleSpecial xs = mapM_ handleSpecial' xs
     where
     handleSpecial' (Event (Char 'q') Down _ _) = leaveMainLoop
-    handleSpecial' x = putStrLn (show x) >> return ()
+    handleSpecial' x = return () -- putStrLn (show x) >> return ()
 
 callback :: InputIORef -> KeyboardMouseCallback
 callback iorf key keyState mods pos = modifyIORef' iorf ( event : )

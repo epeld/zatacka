@@ -11,10 +11,11 @@ type DirectionChange = Maybe Turn
 change :: [Input.Event] -> Maybe DirectionChange
 change [] = Nothing
 change (x:_) = case x ^. keyState of
-    Down -> Just $ lookup k keys
+    Down -> lookup k downkeys
     Up -> lookup k upkeys
     where
-    upkeys = zip up $ repeat Nothing
+    downkeys = keys & mapped._2 %~ Just
+    upkeys = keys & mapped._2 .~ Nothing
     k = x ^. key
 
 keys :: [(Key, Turn)]

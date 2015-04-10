@@ -27,7 +27,7 @@ extend dt (TimeSeries (x : xs)) = TimeSeries evs
 -- Insert a new event - merging with the previous if they have the same content
 insert :: Eq a => Event a -> TimeSeries a -> TimeSeries a
 insert ev ts@(TimeSeries evs) = 
-    if take 1 evs == [ev]
+    if evs ^? _head.content == Just (ev ^. content)
     then extend (ev ^. duration) ts 
     else TimeSeries (ev : evs)
 
