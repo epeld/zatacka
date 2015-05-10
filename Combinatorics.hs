@@ -12,7 +12,7 @@ pairs _ = []
 
 
 boxed :: Num a => a -> (a,a) -> [(a,a)]
-boxed sz v = fmap (\pt -> pt & both *~ sz & _1 +~ v ^. _1 & _2 +~ v ^. _2) box
+boxed sz (x,y) = fmap (\pt -> pt & both *~ sz & _1 +~ x & _2 +~ y) box
 
 box :: Num a => [(a,a)]
 box = cartesian [-1,1] [-1,1]
