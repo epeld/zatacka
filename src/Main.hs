@@ -8,9 +8,9 @@ main :: IO ()
 main = do
     getArgsAndInitialize
     window <- createWindow "Hello, World!"
-    signal <- timerSignal 300
+    signal <- timer 10
     putStrLn "Hello, World!"
-    idleCallback $= Just (runSignal signal)
+    subscribe signal $ \x -> putStrLn (show x)
     displayCallback $= return ()
     putStrLn "Main loop."
     mainLoop
@@ -18,10 +18,7 @@ main = do
 
 runSignal :: Show a => Signal a -> IO ()
 runSignal s = do
-    (old, new) <- updateSignal s
-    case new of
-        Nothing -> return ()
-        Just v -> putStrLn (oldNewMessage old v)
+    v <- Signal.get s
+    putStrLn (show v)
 
 
-oldNewMessage old v = unwords [show old, "->", show v]
