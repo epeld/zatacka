@@ -1,7 +1,8 @@
 module Main where
 import Graphics.UI.GLUT
 
-import Signal
+import Data.Signal as Signal
+import Data.Signal.GLUT.Time
 
 
 main :: IO ()

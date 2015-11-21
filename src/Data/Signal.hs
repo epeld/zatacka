@@ -1,8 +1,4 @@
-module Signal where
-import Graphics.UI.GLUT.Callbacks.Global (addTimerCallback)
-import Graphics.UI.GLUT.State (elapsedTime)
-import qualified Graphics.Rendering.OpenGL.GL.StateVar as StateVar
-
+module Data.Signal where
 import Control.Monad
 import Data.IORef
 
@@ -31,20 +27,6 @@ constant initial = do
 
     return (Signal gets subscribes, sets)
         
-
-timer :: Int -> IO (Signal Int)
-timer ms = do
-    (signal, update) <- constant undefined
-
-    let runAndReschedule = do
-            time <- StateVar.get elapsedTime
-            update time
-            addTimerCallback ms runAndReschedule
-
-    runAndReschedule
-
-    return signal
-
 
 delayed :: Int -> Signal a -> IO (Signal a)
 delayed n s = do
