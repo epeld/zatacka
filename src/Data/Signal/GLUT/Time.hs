@@ -11,7 +11,7 @@ timer ms = do
 
     let runAndReschedule = do
             time <- StateVar.get elapsedTime
-            update time
+            update (const time)
             addTimerCallback ms runAndReschedule
 
     runAndReschedule
