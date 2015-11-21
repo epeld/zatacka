@@ -6,3 +6,4 @@ header
 game
 Main
 *.dyn*
+dist
