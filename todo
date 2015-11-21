@@ -1,0 +1,19 @@
+
+turns produce one point every x radians
+
+must always produce at least one pt (= height/width diff must be at least 1)
+
+speed, thickness control
+
+game setup (randomization!)
+
+
+
+
+
+
+
+
+collisions
+
+multiple worms
