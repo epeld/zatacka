@@ -1,3 +1,0 @@
-
-mkdir -p build header
-ghc --make -odir build  -hidir header Main.hs -o game
