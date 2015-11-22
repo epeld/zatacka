@@ -6,15 +6,26 @@ import Data.Signal.GLUT.Time
 import Data.Signal.GLUT.Keyboard
 
 import Control.Monad
+import System.Exit
+
+import qualified Data.Set as Set
 
 
 main :: IO ()
 main = do
+    let keys = Set.fromList [Character 'a', Character 'b']
+
     getArgsAndInitialize
     window <- createWindow "Hello, World!"
-    signal <- foldp (:) [] =<< timer 500
     putStrLn "Hello, World!"
-    subscribe signal $ \x -> putStrLn (show x)
+
+    signal <- timer 1000
+    subscribe signal $ \x -> putStrLn "Boink."
+
+    keyboard <- keyboard
+    subscribe keyboard $ \s -> 
+        when (Set.isSubsetOf keys s) (exitWith ExitSuccess)
+
     displayCallback $= return ()
     putStrLn "Main loop."
     mainLoop
