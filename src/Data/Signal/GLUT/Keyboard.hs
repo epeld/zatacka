@@ -16,8 +16,8 @@ keyboard = do
     up <- keyUp
     down <- keyDown
 
-    subscribe up (update . Set.insert)
-    subscribe down (update . Set.delete)
+    subscribe down (update . Set.insert)
+    subscribe up (update . Set.delete)
 
     return signal
 
