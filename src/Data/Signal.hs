@@ -14,6 +14,7 @@ data Signal a = Signal { get :: IO a, subscribe :: Listener a -> IO () }
 instance Functor Signal where
     fmap f s = Signal (fmap f (get s)) (\l -> subscribe s (l . f))
 
+
 atomicCons ref x = atomicModifyIORef ref (\xs -> (x : xs, xs))
 atomicCons_ ref x = atomicModifyIORef ref (\xs -> (x : xs, ()))
 

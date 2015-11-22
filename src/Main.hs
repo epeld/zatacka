@@ -3,6 +3,7 @@ import Graphics.UI.GLUT
 
 import Data.Signal as Signal
 import Data.Signal.GLUT.Time
+import Data.Signal.GLUT.Keyboard
 
 import Control.Monad
 
