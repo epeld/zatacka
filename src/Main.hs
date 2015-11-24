@@ -24,7 +24,7 @@ main = do
 
     keyboard <- keyboard
     subscribe keyboard $ \s -> 
-        when (Set.isSubsetOf keys s) (exitWith ExitSuccess)
+        when (Set.isSubsetOf keys s) exitSuccess
 
     displayCallback $= return ()
     putStrLn "Main loop."
@@ -34,6 +34,6 @@ main = do
 runSignal :: Show a => Signal a -> IO ()
 runSignal s = do
     v <- Signal.get s
-    putStrLn (show v)
+    print v
 
 
