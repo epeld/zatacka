@@ -4,9 +4,12 @@ import Control.Monad
 
 import Data.IORef
 
+
 type Listener a = a -> IO ()
 
+
 type UpdateFn a = (a -> a) -> IO ()
+
 
 data Signal a = Signal { get :: IO a, subscribe :: Listener a -> IO () }
 
@@ -33,7 +36,7 @@ constant initial = do
     let subscribes = atomicCons_ lref
 
     return (Signal gets subscribes, updates)
-        
+
 
 delayed :: Int -> Signal a -> IO (Signal a)
 delayed n s = do

@@ -7,7 +7,9 @@ import Data.Signal
 import Data.Set (Set)
 import qualified Data.Set as Set
 
+
 data KeyEvent = Special SpecialKey | Character Char deriving (Show, Eq, Ord)
+
 
 keyboard :: IO (Signal (Set KeyEvent))
 keyboard = do
@@ -44,3 +46,5 @@ keyDown = do
     specialCallback $= Just (down . Special)
 
     return signal
+
+

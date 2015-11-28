@@ -31,9 +31,3 @@ main = do
     mainLoop
 
 
-runSignal :: Show a => Signal a -> IO ()
-runSignal s = do
-    v <- Signal.get s
-    print v
-
-
