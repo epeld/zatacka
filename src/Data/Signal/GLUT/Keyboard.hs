@@ -11,40 +11,37 @@ import qualified Data.Set as Set
 data KeyEvent = Special SpecialKey | Character Char deriving (Show, Eq, Ord)
 
 
-keyboard :: IO (Signal (Set KeyEvent))
+keyboard :: IO (Producer (Set KeyEvent) m b)
 keyboard = do
-    (signal, update) <- constant Set.empty
-    
     up <- keyUp
     down <- keyDown
 
-    subscribe down (update . Set.insert)
-    subscribe up (update . Set.delete)
+    keys <- merge (fmap Set.remove up) (fmap Set.insert down)
 
-    return signal
+    return (keys >-> foldp ($) Set.empty)
+    
 
-
-keyUp :: IO (Signal KeyEvent)
+keyUp :: IO (Producer KeyEvent m b)
 keyUp = do
-    (signal, update) <- constant (Special KeyBegin)
+    (producer, consumer) <- mailbox
 
-    let up ev _ = update (const ev)
+    let up ev _ =  ev `send` consumer
 
     keyboardUpCallback $= Just (up . Character)
     specialUpCallback $= Just (up . Special)
 
-    return signal
+    return producer
 
 
-keyDown :: IO (Signal KeyEvent)
+keyDown :: IO (Producer KeyEvent m b)
 keyDown = do
-    (signal, update) <- constant (Special KeyBegin)
+    (producer, consumer) <- mailbox
 
-    let down ev _ = update (const ev)
+    let down ev _ = ev `send` consumer
 
     keyboardCallback $= Just (down . Character)
     specialCallback $= Just (down . Special)
 
-    return signal
+    return producer
 
 
