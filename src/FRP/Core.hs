@@ -1,10 +1,13 @@
-module Data.Signal where
+module FRP.Core where
+import Prelude hiding (mapM)
+
 import Control.Arrow
-import Control.Monad
+import Control.Monad hiding (mapM)
 
 import Pipes
 import Pipes.Concurrent
 
+import Data.Traversable
 
 
 foldp :: Monad m => (a -> s -> s) -> s -> Pipe a s m b
@@ -14,8 +17,12 @@ foldp f s = do yield s
 
 
 mailbox :: IO (Consumer a IO (), Producer a IO ())
-mailbox = do
-    (output, input) <- spawn unbounded
+mailbox = mailbox' unbounded
+
+
+mailbox' :: Buffer a -> IO (Consumer a IO (), Producer a IO ())
+mailbox' b = do
+    (output, input) <- spawn b
     return (toOutput output, fromInput input)
         
 
@@ -24,10 +31,13 @@ send x consumer = let eff = yield x >-> consumer in runEffect eff
 
 
 merge :: Producer a IO () -> Producer a IO () -> IO (Producer a IO ())
-merge x y = do
+merge x y = mergeAll [x, y]
+
+
+mergeAll :: Traversable t => t (Producer a IO ()) -> IO (Producer a IO ())
+mergeAll ps = do
     (consumer, producer) <- mailbox
 
-    forkIO $ runEffect $ x >-> consumer
-    forkIO $ runEffect $ y >-> consumer
+    mapM (\p -> forkIO (runEffect $ p >-> consumer)) ps
 
     return producer

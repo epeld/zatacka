@@ -1,8 +1,11 @@
-module Data.Signal.GLUT.Keyboard where
+module FRP.GLUT.Keyboard where
 import Graphics.UI.GLUT.Callbacks.Window
 import Graphics.Rendering.OpenGL.GL.StateVar 
 
-import Data.Signal
+import FRP.Core
+
+import Pipes
+import Pipes.Prelude as P
 
 import Data.Set (Set)
 import qualified Data.Set as Set
@@ -11,19 +14,19 @@ import qualified Data.Set as Set
 data KeyEvent = Special SpecialKey | Character Char deriving (Show, Eq, Ord)
 
 
-keyboard :: IO (Producer (Set KeyEvent) m b)
+keyboard :: IO (Producer (Set KeyEvent) IO ())
 keyboard = do
     up <- keyUp
     down <- keyDown
 
-    keys <- merge (fmap Set.remove up) (fmap Set.insert down)
+    keys <- merge (up >-> P.map Set.delete) (down >-> P.map Set.insert)
 
     return (keys >-> foldp ($) Set.empty)
     
 
-keyUp :: IO (Producer KeyEvent m b)
+keyUp :: IO (Producer KeyEvent IO ())
 keyUp = do
-    (producer, consumer) <- mailbox
+    (consumer, producer) <- mailbox
 
     let up ev _ =  ev `send` consumer
 
@@ -33,9 +36,9 @@ keyUp = do
     return producer
 
 
-keyDown :: IO (Producer KeyEvent m b)
+keyDown :: IO (Producer KeyEvent IO ())
 keyDown = do
-    (producer, consumer) <- mailbox
+    (consumer, producer) <- mailbox
 
     let down ev _ = ev `send` consumer
 

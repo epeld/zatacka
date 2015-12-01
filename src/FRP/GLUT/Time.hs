@@ -1,9 +1,11 @@
-module Data.Signal.GLUT.Time where
+module FRP.GLUT.Time where
 import Graphics.UI.GLUT.Callbacks.Global (addTimerCallback)
 import Graphics.UI.GLUT.State (elapsedTime)
-import qualified Graphics.Rendering.OpenGL.GL.StateVar 
+import Graphics.Rendering.OpenGL.GL.StateVar 
 
-import Data.Signal
+import Pipes
+
+import FRP.Core
 
 type Time = Int
 
